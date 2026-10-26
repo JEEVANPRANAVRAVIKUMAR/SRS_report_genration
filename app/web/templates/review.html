@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width: 1100px; margin: 0 auto;">
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
+    <div>
+      <h1 class="card-title" style="font-size: 1.4rem;">Review Daily Generation Reading</h1>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px;">
+        Upload #{{ upload.id }} • Received via {{ upload.received_via }} • Record Date: <strong>{{ reading.report_date }}</strong>
+      </p>
+    </div>
+    <span class="chip chip-{{ upload.status.lower() }}">{{ upload.status }}</span>
+  </div>
+
+  <div class="grid-2">
+    <!-- Left Column: Evidence Crop -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title" style="font-size: 1rem;">Evidence Crop (SRS Row Only)</h2>
+        <span style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">Evidence #{{ upload.id }}</span>
+      </div>
+
+      <div class="crop-container" style="min-height: 200px; margin-bottom: 1rem;">
+        {% if evidence_url %}
+        <img src="{{ evidence_url }}" alt="Evidence Crop - SRS Kumaran Row" class="crop-image" id="evidence-crop-img">
+        {% else %}
+        <div style="padding: 3rem 1rem; text-align: center; color: var(--text-muted);">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 0.5rem;">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          <p style="font-size: 0.85rem;">[Evidence Crop: SRS KUMARAN row (5), 1 MW]</p>
+          <p style="font-size: 0.75rem; margin-top: 4px;">Inverter: {{ reading.inverter_kwh }} • EB: {{ reading.eb_export_kwh }} • 6-10: {{ reading.eb_6to10_kwh }}</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Prospective Effect Preview (B5, B6 Rule 9) -->
+      <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: var(--radius-md); padding: 0.85rem 1rem;">
+        <div style="font-size: 0.82rem; font-weight: 700; color: var(--solar-amber); margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          Prospective Monthly Effect Preview
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-primary); line-height: 1.5;">
+          {{ preview_message }}
+        </p>
+        {% if missing_dates_str %}
+        <p style="font-size: 0.78rem; color: var(--status-danger); margin-top: 0.35rem;">
+          Missing earlier days: <strong>{{ missing_dates_str }}</strong>
+        </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right Column: Extracted Values & Confirmation -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title" style="font-size: 1rem;">Verify & Reconcile Numbers</h2>
+        <span style="font-size: 0.75rem; color: #34D399; font-weight: 600;">Accuracy over automation</span>
+      </div>
+
+      <form method="POST" action="/review/{{ upload.id }}/accept" id="review-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
+          <div class="form-group">
+            <label class="form-label">Report Date</label>
+            <input type="date" name="report_date" class="form-control" value="{{ reading.report_date }}" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Customer Row</label>
+            <input type="text" class="form-control" value="SRS KUMARAN (1 MW)" readonly style="opacity: 0.8;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
+          <div class="form-group">
+            <label class="form-label">Inverter Today (kWh)</label>
+            <input type="number" step="0.01" name="inverter_kwh" class="form-control" value="{{ reading.inverter_kwh }}" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Monthly Plant (kWh)</label>
+            <input type="number" step="0.01" name="reported_monthly_kwh" class="form-control" value="{{ reading.reported_monthly_kwh or '' }}">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
+          <div class="form-group">
+            <label class="form-label">EB Export (kWh)</label>
+            <input type="number" step="0.01" name="eb_export_kwh" class="form-control" value="{{ reading.eb_export_kwh }}" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">6am-10am Export (kWh)</label>
+            <input type="number" step="0.01" name="eb_6to10_kwh" class="form-control" value="{{ reading.eb_6to10_kwh }}" required>
+          </div>
+        </div>
+
+        <!-- Weather Remarks Section (B7) -->
+        <div class="form-group" style="margin-top: 0.5rem;">
+          <label class="form-label">Weather & Remarks</label>
+          <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap;">
+            <span style="font-size: 0.8rem; color: var(--text-secondary);">Open-Meteo proposed:</span>
+            <span class="chip chip-open" style="font-family: var(--font-mono); font-size: 0.8rem; text-transform: none;">
+              {{ auto_remark or 'Sunny, 35°C' }}
+            </span>
+
+            {% if weather_mismatch %}
+            <div class="mismatch-chip" title="Plant reports {{ reading.plant_weather_text }}, but Open-Meteo reports {{ auto_remark }}">
+              ⚠️ Weather mismatch (Plant: {{ reading.plant_weather_text }})
+            </div>
+            {% endif %}
+          </div>
+          <input type="text" name="manual_remark" class="form-control" placeholder="Add manual remark (optional)..." value="{{ reading.manual_remark or '' }}">
+        </div>
+
+        <!-- Actions -->
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem; flex-wrap: wrap;">
+          <button type="submit" class="btn btn-primary" style="flex: 2;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Accept & Update Log
+          </button>
+
+          <button type="button" class="btn btn-danger" style="flex: 1;" onclick="openRejectModal()">
+            Reject
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openRejectModal() {
+    const reason = prompt("Please enter the reason for rejecting this upload:");
+    if (reason && reason.trim()) {
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/review/{{ upload.id }}/reject';
+      
+      const csrf = document.createElement('input');
+      csrf.type = 'hidden';
+      csrf.name = 'csrf_token';
+      csrf.value = getCsrfToken();
+      form.appendChild(csrf);
+
+      const rField = document.createElement('input');
+      rField.type = 'hidden';
+      rField.name = 'reason';
+      rField.value = reason.trim();
+      form.appendChild(rField);
+
+      document.body.appendChild(form);
+      form.submit();
+    }
+  }
+</script>
+{% endblock %}

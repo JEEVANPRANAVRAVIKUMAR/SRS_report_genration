@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h1 class="card-title" style="font-size: 1.35rem;">Solar Performance Insights</h1>
+      <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px;">
+        Yield Index analysis (Generation vs Sunshine Solar Energy). Screen-only performance audit (never printed).
+      </p>
+    </div>
+    <span class="chip chip-open">Baseline: {{ clear_baseline }} kWh/(kWh/m²)</span>
+  </div>
+
+  <!-- Comparison Bar Chart Visualization (SPEC B7, B11) -->
+  <div style="background: var(--bg-surface-elevated); padding: 1.25rem; border-radius: var(--radius-md); margin-top: 0.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+      <h3 style="font-size: 0.95rem; font-weight: 600;">{{ month_label }} Daily Generation vs Solar Radiation</h3>
+      <div style="display: flex; gap: 1rem; font-size: 0.78rem;">
+        <span style="display: inline-flex; align-items: center; gap: 4px;">
+          <span style="width: 10px; height: 10px; background: var(--solar-amber); border-radius: 2px;"></span> Actual Generation (kWh)
+        </span>
+        <span style="display: inline-flex; align-items: center; gap: 4px;">
+          <span style="width: 10px; height: 10px; background: var(--blue-primary); border-radius: 2px;"></span> Solar Energy (kWh/m²)
+        </span>
+      </div>
+    </div>
+
+    <!-- Chart visualization bars -->
+    <div class="chart-container">
+      {% for b in chart_bars %}
+      <div class="chart-bar-group" title="{{ b.date_str }}: Gen {{ b.inverter_kwh }} kWh, Solar {{ b.solar_kwh_m2 }} kWh/m² (Yield Index {{ b.yield_index }})">
+        <div class="bar-inverter" style="height: {{ b.inverter_pct }}%;"></div>
+        <div class="bar-solar" style="height: {{ b.solar_pct }}%;"></div>
+      </div>
+      {% endfor %}
+    </div>
+    <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">
+      <span>Day 1</span>
+      <span>Day 15</span>
+      <span>Day 31</span>
+    </div>
+  </div>
+
+  <!-- Performance Flags Table -->
+  <div style="margin-top: 1.5rem;">
+    <h3 style="font-size: 1.05rem; font-weight: 600; margin-bottom: 0.75rem;">Performance Flagged Days</h3>
+    {% if flagged_days %}
+    <div class="table-responsive">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Actual Inverter (kWh)</th>
+            <th>Solar Energy (kWh/m²)</th>
+            <th>Yield Index</th>
+            <th>Expected kWh</th>
+            <th>Flag & Observation</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in flagged_days %}
+          <tr>
+            <td class="text-center">{{ f.date }}</td>
+            <td class="text-right">{{ f.actual_kwh }}</td>
+            <td class="text-right">{{ f.solar_energy }}</td>
+            <td class="text-right">{{ f.yield_index }}</td>
+            <td class="text-right">{{ f.expected_kwh }}</td>
+            <td style="color: {% if 'Below' in f.flag %}#F87171{% else %}#FBBF24{% endif %}; font-weight: 600; font-size: 0.8rem;">
+              ⚠️ {{ f.flag }} ({{ f.ratio_pct }}%)
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="padding: 1.25rem; background: var(--bg-surface-elevated); border-radius: var(--radius-md); text-align: center; color: #34D399; font-size: 0.88rem;">
+      ✓ All daily generation readings align within normal tolerances for solar radiation levels.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

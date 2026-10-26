@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+  <!-- Controls Bar -->
+  <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 class="card-title" style="font-size: 1.35rem; display: flex; align-items: center; gap: 0.65rem;">
+        {{ month_label }} Report View
+        <span class="chip chip-{{ month_status.lower() }}">{{ month_status }}</span>
+      </h1>
+      <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px;">
+        Single-page report matching official PDF and Excel layouts (31 calendar days)
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+      <a href="/api/years/{{ year }}/workbook" class="btn btn-secondary" style="font-size: 0.85rem; min-height: 40px; padding: 0 0.85rem;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="8" y1="13" x2="16" y2="13"></line>
+          <line x1="8" y1="17" x2="16" y2="17"></line>
+        </svg>
+        Download Excel
+      </a>
+
+      <a href="/api/months/{{ ym }}/pdf" class="btn btn-primary" style="font-size: 0.85rem; min-height: 40px; padding: 0 0.85rem;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Export PDF (Rev {{ pdf_revision }})
+      </a>
+
+      <button type="button" class="btn btn-secondary" onclick="openManualModal()" style="font-size: 0.85rem; min-height: 40px; padding: 0 0.85rem;">
+        + Manual Day
+      </button>
+    </div>
+  </div>
+
+  <!-- Identical PDF Table Structure (SPEC B8, B9, B11) -->
+  <div class="table-responsive">
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th rowspan="2" style="width: 80px;">Date</th>
+          <th rowspan="2" style="width: 85px;">Inverter</th>
+          <th rowspan="2" style="width: 100px;">Monthly<br>Inverter Total</th>
+          <th rowspan="2" style="width: 80px;">EB Reading</th>
+          <th rowspan="2" style="width: 100px;">EB Reading<br>Total</th>
+          <th rowspan="2" style="width: 80px;">6am-<br>10am</th>
+          <th style="background: #FFFFFF; font-weight: 700; border: 2px solid #5B9BD5;">{{ month_label }}</th>
+        </tr>
+        <tr>
+          <th style="text-align: left; background: #FFFFFF; font-weight: 700;">Remarks</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in table_rows %}
+        <tr onclick="showRowDetails('{{ row.date_str }}', '{{ row.inverter }}', '{{ row.eb_export }}', '{{ row.remark }}')">
+          <td class="text-center">{{ row.date_str }}</td>
+          <td class="text-right">{{ row.inverter }}</td>
+          <td class="text-right">{{ row.running_inverter }}</td>
+          <td class="text-right">{{ row.eb_export }}</td>
+          <td class="text-right">{{ row.running_eb }}</td>
+          <td class="text-right">{{ row.eb_6to10 }}</td>
+          <td style="text-align: left; font-size: 0.78rem;">{{ row.remark }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Table Footer -->
+  <div style="margin-top: 0.75rem; display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted);">
+    <span>Generated official report layout • Revision {{ pdf_revision }}</span>
+    <span>Weather data: Open-Meteo.com (CC BY 4.0)</span>
+  </div>
+</div>
+
+<script>
+  function showRowDetails(d, inv, eb, rem) {
+    if (!inv) {
+      alert(`Date: ${d}\nStatus: Not recorded (Gap)`);
+    } else {
+      alert(`Date: ${d}\nInverter Generation: ${inv} kWh\nEB Export: ${eb} kWh\nRemark: ${rem}`);
+    }
+  }
+
+  function openManualModal() {
+    const d = prompt("Enter report date (YYYY-MM-DD):", "{{ ym }}-01");
+    if (!d) return;
+    const inv = prompt("Inverter kWh:", "5800.00");
+    if (!inv) return;
+    const eb = prompt("EB Export kWh:", "5650.00");
+    if (!eb) return;
+    const eb610 = prompt("6am-10am kWh:", "1200.00");
+    if (!eb610) return;
+    const reason = prompt("Mandatory written reason for manual entry:");
+    if (!reason || !reason.trim()) {
+      alert("Manual entry requires a written reason!");
+      return;
+    }
+
+    const payload = {
+      report_date: d,
+      inverter_kwh: parseFloat(inv),
+      eb_export_kwh: parseFloat(eb),
+      eb_6to10_kwh: parseFloat(eb610),
+      reason: reason.trim()
+    };
+
+    secureFetch('/api/readings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(res => {
+      if (res.ok) window.location.reload();
+      else alert("Error saving manual reading.");
+    });
+  }
+</script>
+{% endblock %}

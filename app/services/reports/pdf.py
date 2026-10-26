@@ -196,10 +196,12 @@ class PDFReportGenerator:
             pdf_table = Table(table_data, colWidths=col_widths, rowHeights=row_heights)
             pdf_table.setStyle(TableStyle(table_styles))
 
-            # Footer text
             now_dt = clock.now()
             gen_date_str = custom_footer_date_str or now_dt.strftime("%d-%b-%Y %H:%M IST")
-            footer_text = f"Generated {gen_date_str}, revision {revision}. Weather data: Open-Meteo.com (CC BY 4.0)"
+            if reason and reason.lower().replace("_", " ").strip() == "post-lock amendment":
+                footer_text = f"Generated {gen_date_str}, revision {revision} (post-lock amendment). Weather data: Open-Meteo.com (CC BY 4.0)"
+            else:
+                footer_text = f"Generated {gen_date_str}, revision {revision}. Weather data: Open-Meteo.com (CC BY 4.0)"
             if missing_days_count > 0:
                 footer_text += f" • {missing_days_count} day(s) not recorded"
 

@@ -1,0 +1,40 @@
+{
+  "name": "SRS Solar Daily Log",
+  "short_name": "SRS Solar",
+  "description": "Daily Generation Logger and Report Generator for M/s. SRS KUMARAN INDIA PVT LTD (1 MW Sunpro Antichettipalayam)",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0B1120",
+  "theme_color": "#0F172A",
+  "categories": ["utilities", "business", "productivity"],
+  "icons": [
+    {
+      "src": "/static/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "share_target": {
+    "action": "/upload",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "files": [
+        {
+          "name": "image",
+          "accept": ["image/*", ".jpg", ".jpeg", ".png", ".webp"]
+        }
+      ]
+    }
+  }
+}

@@ -156,8 +156,8 @@ class ExcelReportGenerator:
         cell_empty = workbook.add_format({**base_format_dict})
         cell_empty_alt = workbook.add_format({**base_format_dict, "bg_color": alt_bg_color})
 
-        # Generate month sheets
-        active_months = sorted(readings_by_month.keys())
+        # Generate month sheets (for any month that has started or has data)
+        active_months = sorted(set(readings_by_month.keys()).union(set(month_statuses.keys())))
         for m in active_months:
             sheet_name = format_month_label(year, m)
             ws = workbook.add_worksheet(sheet_name)

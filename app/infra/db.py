@@ -38,6 +38,12 @@ engine = get_engine()
 SessionFactory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
+def get_session() -> Session:
+    """Create and return a new Session instance."""
+    return SessionFactory()
+
+
+
 @contextmanager
 def get_db(session_override: Session | None = None) -> Generator[Session, None, None]:
     """Provide a transactional database session."""

@@ -1,4 +1,4 @@
-"""Self-contained test runner executing all Phase P1, P2, and P3 unit test suites."""
+"""Self-contained test runner executing all Phase P1, P2, P3, and P4 unit test suites."""
 
 import sys
 import unittest
@@ -27,6 +27,22 @@ from tests.unit.test_ac05_duplicate_replace import TestAC05DuplicateReplace
 from tests.unit.test_ac13_bad_inputs import TestAC13BadInputs
 from tests.unit.test_ac15_privacy import TestAC15Privacy
 
+# Phase P4 Test Suites
+from tests.unit.test_ac12_weather_failure_and_refresh import TestAC12WeatherFailureAndRefresh
+from tests.unit.test_open_meteo_archive_routing import TestOpenMeteoArchiveRouting
+from tests.unit.test_yield_insights import TestYieldInsights
+
+# Phase P5 Test Suites
+from tests.unit.test_ac07_month_close import TestAC07MonthClose
+from tests.unit.test_ac08_late_entry_debounce import TestAC08LateEntryDebounce
+from tests.unit.test_ac09_catchup_startup import TestAC09CatchupStartup
+from tests.unit.test_ac10_month_locking import TestAC10MonthLocking
+from tests.unit.test_ac11_utc_clock_close import TestAC11UTCClockClose
+
+# Phase P6 Test Suites
+from tests.unit.test_ac19_backup_restore import TestAC19BackupRestore
+from tests.unit.test_ac20_security_csrf_rbac import TestAC20SecurityCSRFRBAC
+
 
 def run_all_tests() -> bool:
     loader = unittest.TestLoader()
@@ -49,6 +65,22 @@ def run_all_tests() -> bool:
     suite.addTests(loader.loadTestsFromTestCase(TestAC05DuplicateReplace))
     suite.addTests(loader.loadTestsFromTestCase(TestAC13BadInputs))
     suite.addTests(loader.loadTestsFromTestCase(TestAC15Privacy))
+
+    # Phase P4
+    suite.addTests(loader.loadTestsFromTestCase(TestAC12WeatherFailureAndRefresh))
+    suite.addTests(loader.loadTestsFromTestCase(TestOpenMeteoArchiveRouting))
+    suite.addTests(loader.loadTestsFromTestCase(TestYieldInsights))
+
+    # Phase P5
+    suite.addTests(loader.loadTestsFromTestCase(TestAC07MonthClose))
+    suite.addTests(loader.loadTestsFromTestCase(TestAC08LateEntryDebounce))
+    suite.addTests(loader.loadTestsFromTestCase(TestAC09CatchupStartup))
+    suite.addTests(loader.loadTestsFromTestCase(TestAC10MonthLocking))
+    suite.addTests(loader.loadTestsFromTestCase(TestAC11UTCClockClose))
+
+    # Phase P6
+    suite.addTests(loader.loadTestsFromTestCase(TestAC19BackupRestore))
+    suite.addTests(loader.loadTestsFromTestCase(TestAC20SecurityCSRFRBAC))
 
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)

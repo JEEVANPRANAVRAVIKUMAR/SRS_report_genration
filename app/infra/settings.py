@@ -3,7 +3,7 @@
 from pathlib import Path
 import json
 import os
-from typing import List
+from typing import List, Optional
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -46,9 +46,12 @@ class Settings:
         # Report & Month settings
         self.CLOSE_TIME: str = os.getenv("CLOSE_TIME", "00:05")
         self.GRACE_DAYS: int = int(os.getenv("GRACE_DAYS", "3"))
+        self.DEBOUNCE_SECONDS: float = float(os.getenv("DEBOUNCE_SECONDS", "120.0"))
         self.REMARK_MODE: str = os.getenv("REMARK_MODE", "both")  # both, manual_only, auto_only
         self.WORKBOOK_MODE: str = os.getenv("WORKBOOK_MODE", "yearly")  # yearly, monthly
         self.DATE_FORMAT: str = os.getenv("DATE_FORMAT", "m/d/yyyy")
+        export_copy_env = os.getenv("EXPORT_COPY_DIR")
+        self.EXPORT_COPY_DIR: Optional[Path] = Path(export_copy_env) if export_copy_env else None
 
         # Third-party credentials
         self.OPEN_METEO_API_KEY: str = os.getenv("OPEN_METEO_API_KEY", "")

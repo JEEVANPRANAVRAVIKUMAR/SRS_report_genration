@@ -1,0 +1,30 @@
+# Caddyfile - Reverse Proxy with automatic HTTPS (SPEC Section B13)
+# Replace solar.yourplant.com with your actual public domain or local plant hostname
+
+solar.yourplant.com {
+    # Automatic TLS encryption via Let's Encrypt / ZeroSSL
+    tls internal  # Use 'tls internal' for local LAN/intranet or omit for public domain
+
+    # Reverse proxy to SRS Solar Python application
+    reverse_proxy 127.0.0.1:8000
+
+    # Strict Security Headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Content-Security-Policy "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline';"
+    }
+
+    # Compress responses (gzip / zstd)
+    encode zstd gzip
+
+    # Logging
+    log {
+        output file /var/log/caddy/srs_solar_access.log {
+            roll_size 10mb
+            roll_keep 10
+        }
+    }
+}

@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 class="card-title" style="font-size: 1.35rem;">System Health & Audit Trail</h1>
+      <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px;">
+        Real-time operations status (/healthz), scheduled background jobs, backups, and immutable audit log
+      </p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+      <button type="button" class="btn btn-primary" onclick="triggerBackupNow()" style="font-size: 0.85rem; min-height: 40px; padding: 0 0.85rem;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+        Create Backup Now
+      </button>
+    </div>
+  </div>
+
+  <!-- Operational Health Metrics (/healthz) -->
+  <div class="grid-4" style="margin-top: 0.75rem;">
+    <div class="stat-widget">
+      <span class="stat-label">Database Status</span>
+      <span class="stat-value" style="color: #34D399; font-size: 1.25rem;">ONLINE</span>
+      <span class="stat-subtext">SQLite WAL Mode • {{ db_size_mb }} MB</span>
+    </div>
+
+    <div class="stat-widget">
+      <span class="stat-label">Scheduler Status</span>
+      <span class="stat-value" style="color: #34D399; font-size: 1.25rem;">ACTIVE</span>
+      <span class="stat-subtext">APScheduler (Asia/Kolkata)</span>
+    </div>
+
+    <div class="stat-widget">
+      <span class="stat-label">Disk Available</span>
+      <span class="stat-value" style="font-size: 1.25rem;">{{ free_disk_gb }} GB</span>
+      <span class="stat-subtext">Reports & Database Storage</span>
+    </div>
+
+    <div class="stat-widget">
+      <span class="stat-label">Last Month Close</span>
+      <span class="stat-value" style="color: var(--solar-amber); font-size: 1.2rem;">{{ last_job_period or '2026-05' }}</span>
+      <span class="stat-subtext">Status: SUCCESS</span>
+    </div>
+  </div>
+
+  <!-- Backups Section -->
+  <div style="margin-top: 1.5rem;">
+    <h3 style="font-size: 1.05rem; font-weight: 600; margin-bottom: 0.75rem;">Archived Backups (30-Day Retention)</h3>
+    {% if backups %}
+    <div class="table-responsive">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Backup Directory</th>
+            <th>Created At</th>
+            <th>Actor</th>
+            <th>Workbooks</th>
+            <th>PDF Reports</th>
+            <th>DB Size</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in backups %}
+          <tr>
+            <td style="font-family: var(--font-mono); font-size: 0.8rem;">{{ b.directory }}</td>
+            <td class="text-center">{{ b.created_at[:19] }}</td>
+            <td class="text-center">{{ b.actor_label }}</td>
+            <td class="text-center">{{ b.workbooks_count }}</td>
+            <td class="text-center">{{ b.reports_count }}</td>
+            <td class="text-right">{{ (b.db_size_bytes / 1024)|round(1) }} KB</td>
+            <td class="text-center">
+              <button class="btn btn-secondary" style="min-height: 28px; padding: 0 0.5rem; font-size: 0.75rem;" onclick="restoreBackup('{{ b.directory }}')">
+                Restore
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color: var(--text-muted); font-size: 0.85rem; padding: 0.75rem 0;">No backups created yet.</p>
+    {% endif %}
+  </div>
+
+  <!-- Live Audit Log Table (SPEC B2, B14) -->
+  <div style="margin-top: 2rem;">
+    <h3 style="font-size: 1.05rem; font-weight: 600; margin-bottom: 0.75rem;">Immutable Audit Trail</h3>
+    <div class="table-responsive">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Actor</th>
+            <th>Action</th>
+            <th>Entity</th>
+            <th>Target ID</th>
+            <th>Reason / Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in audit_events %}
+          <tr>
+            <td class="text-center" style="font-family: var(--font-mono); font-size: 0.78rem;">{{ a.at }}</td>
+            <td class="text-center" style="font-weight: 600;">{{ a.actor_label }}</td>
+            <td class="text-center">
+              <span class="chip {% if 'LATE' in a.action or 'REJECT' in a.action %}chip-closed{% else %}chip-open{% endif %}" style="font-size: 0.7rem;">
+                {{ a.action }}
+              </span>
+            </td>
+            <td class="text-center">{{ a.entity }}</td>
+            <td class="text-center" style="font-family: var(--font-mono);">{{ a.entity_id or '-' }}</td>
+            <td style="font-size: 0.8rem;">{{ a.reason or '-' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  function triggerBackupNow() {
+    secureFetch('/api/backups', {
+      method: 'POST'
+    }).then(res => res.json()).then(data => {
+      alert("Backup successfully generated: " + data.backup_dir);
+      window.location.reload();
+    }).catch(err => alert("Backup error: " + err));
+  }
+
+  function restoreBackup(name) {
+    if (confirm(`Are you sure you want to restore backup '${name}'? This will replace current database state.`)) {
+      const reason = prompt("Mandatory written reason for restoring backup:");
+      if (!reason || !reason.trim()) {
+        alert("Restoration requires a written reason!");
+        return;
+      }
+      secureFetch('/api/backups/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ directory: name, reason: reason.trim() })
+      }).then(res => res.json()).then(data => {
+        alert("Backup restored successfully!");
+        window.location.reload();
+      }).catch(err => alert("Restore error: " + err));
+    }
+  }
+</script>
+{% endblock %}

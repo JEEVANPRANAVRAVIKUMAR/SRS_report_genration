@@ -223,3 +223,17 @@ class AuditLogModel(Base):
     before = Column(Text, nullable=True)  # JSON
     after = Column(Text, nullable=True)   # JSON
     reason = Column(String(255), nullable=True)
+
+
+class NotificationModel(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    title = Column(String(100), nullable=False)
+    message = Column(String(255), nullable=False)
+    kind = Column(String(50), nullable=False, default="INFO")  # PDF_READY, REVISION_ADDED, ALERT, LATE_CLOSE
+    ym = Column(String(7), nullable=True)
+    is_read = Column(Boolean, nullable=False, default=False)
+    action_url = Column(String(255), nullable=True)
+
